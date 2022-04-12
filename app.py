@@ -2,11 +2,29 @@ from flask import Flask, jsonify, request
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token
 from pymongo import MongoClient
 from flask_bcrypt import Bcrypt
+from decouple import config
+
+# Prod Or Dev
+ENV = config("ENV")
+
+# Getting Production or Development DB Credentials
+def env_config():
+    if ENV == "DEV":
+        URI = config("LOCAL_URI")
+        DB_NAME = config("LOCAL_DB_NAME")
+        return {"URI": URI, "DB_NAME": DB_NAME}
+    if ENV == "PROD":
+        URI = config("URI")
+        DB_NAME = config("DB_NAME")
+        return {"URI": URI, "DB_NAME": DB_NAME}
+
+
+DB_CREDS = env_config()
 
 # Making a Connection with MongoClient
-client = MongoClient("mongodb://localhost:27017/")
+client = MongoClient(DB_CREDS["URI"])
 # database
-db = client["HustleBee"]
+db = client[DB_CREDS["DB_NAME"]]
 # collection
 user = db["users"]
 
