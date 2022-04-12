@@ -79,7 +79,3 @@ def login():
             return jsonify(msg="Password Incorrect"), 401
     else:
         return jsonify(msg="Not Registered"), 401
-
-
-if __name__ == '__main__':
-    app.run(host="localhost", debug=True, port=2210)
