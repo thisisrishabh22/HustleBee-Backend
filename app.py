@@ -1,16 +1,17 @@
-import pymongo
 from flask import Flask, jsonify, request
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token
 from pymongo import MongoClient
+from flask_bcrypt import Bcrypt
 
 # Making a Connection with MongoClient
-client = MongoClient("mongodb://localhost:27017/?readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=false")
+client = MongoClient("mongodb://localhost:27017/")
 # database
-db = client["app_database"]
+db = client["HustleBee"]
 # collection
-user = db["User"]
+user = db["users"]
 
 app = Flask(__name__)
+bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
 # JWT Config
@@ -20,23 +21,22 @@ app.config["JWT_SECRET_KEY"] = "OizT0h_e6wDiIBlAX2s"
 @app.route("/dashboard")
 @jwt_required
 def dasboard():
-    return jsonify(message="Welcome!")
+    return jsonify(msg="Welcome!")
 
 
 @app.route("/register", methods=["POST"])
 def register():
     email = request.form["email"]
-    # test = User.query.filter_by(email=email).first()
-    test = user.find_one({"email": email})
-    if test:
-        return jsonify(message="User Already Exist"), 409
+    resp_user = user.find_one({"email": email})
+    if resp_user:
+        return jsonify(msg="User Already Exist"), 409
     else:
-        first_name = request.form["first_name"]
-        last_name = request.form["last_name"]
+        name = request.form["name"]
         password = request.form["password"]
-        user_info = dict(first_name=first_name, last_name=last_name, email=email, password=password)
+        pw_hash = bcrypt.generate_password_hash(password)
+        user_info = dict(name=name, email=email, password=pw_hash, token="")
         user.insert_one(user_info)
-        return jsonify(message="User added sucessfully"), 201
+        return jsonify(msg="User added sucessfully"), 201
 
 
 @app.route("/login", methods=["POST"])
@@ -48,12 +48,19 @@ def login():
         email = request.form["email"]
         password = request.form["password"]
 
-    test = user.find_one({"email": email, "password": password})
-    if test:
-        access_token = create_access_token(identity=email)
-        return jsonify(message="Login Succeeded!", access_token=access_token), 201
+    resp_user = user.find_one({"email": email})
+    if resp_user:
+        pass_is_valid = bcrypt.check_password_hash(
+            resp_user["password"], password)
+        if pass_is_valid:
+            access_token = create_access_token(identity=email)
+            user.update_one({"email": email}, {
+                            "$set": {"token": access_token}})
+            return jsonify(msg="Login Succeeded!", accessToken=access_token), 201
+        else:
+            return jsonify(msg="Password Incorrect"), 401
     else:
-        return jsonify(message="Bad Email or Password"), 401
+        return jsonify(msg="Not Registered"), 401
 
 
 if __name__ == '__main__':
