@@ -22,7 +22,7 @@ def env_config():
 DB_CREDS = env_config()
 
 # Making a Connection with MongoClient
-client = MongoClient(DB_CREDS["URI"])
+client = MongoClient(DB_CREDS["URI"],connect=False)
 # database
 db = client[DB_CREDS["DB_NAME"]]
 # collection
