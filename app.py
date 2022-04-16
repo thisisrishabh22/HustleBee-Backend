@@ -4,6 +4,7 @@ from pymongo import MongoClient
 from flask_bcrypt import Bcrypt
 from decouple import config
 from flask_cors import CORS, cross_origin
+import json
 
 # Prod Or Dev
 ENV = config("ENV")
@@ -22,7 +23,7 @@ def env_config():
 
 DB_CREDS = env_config()
 
-app = Flask(__name__)
+app = Flask(_name_)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
@@ -89,3 +90,20 @@ def login():
             return jsonify(msg="Password Incorrect"), 401
     else:
         return jsonify(msg="Not Registered"), 401
+
+@cross_origin(origin='*')
+@app.route("/user", methods=["get"])
+def get_user():
+    if 'token' in request.headers:
+        token = request.headers.get('token')
+        resp_user = user.find_one({"token": token})
+        if resp_user:
+            user_data = {}
+            user_data["_id"] = str(resp_user['_id'])
+            user_data["email"] = resp_user["email"]
+            user_data["name"] = resp_user["name"]
+            return jsonify(msg="user found", user=user_data)
+        else:
+            return jsonify(msg="not authorized")
+    else:
+        return jsonify(msg="not authorized")
