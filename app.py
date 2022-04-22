@@ -23,25 +23,17 @@ def env_config():
 
 DB_CREDS = env_config()
 
-# Making a Connection with MongoClient
-client = MongoClient(host=DB_CREDS["URI"],connect=False)
-# database
-<<<<<<< HEAD
-db = client[DB_CREDS["DB_NAME"]]
-# collection
-user = db["users"]
-
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
-=======
+# Making a Connection with MongoClient
+app.client = MongoClient(host=DB_CREDS["URI"],connect=False)
+# database
 app.db = app.client[DB_CREDS["DB_NAME"]]
 
 # collections
 user = app.db["users"]
 profile = app.db["profiles"]
-
->>>>>>> 2dc2772a64fa5d260dc330a8e3ef86b64921a341
 
 # JWT Config
 app.config["JWT_SECRET_KEY"] = "OizT0h_e6wDiIBlAX2s"
