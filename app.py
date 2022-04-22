@@ -23,7 +23,7 @@ def env_config():
 
 DB_CREDS = env_config()
 
-app = Flask(_name_)
+app = Flask(__name__)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
@@ -103,6 +103,24 @@ def get_user():
             user_data["email"] = resp_user["email"]
             user_data["name"] = resp_user["name"]
             return jsonify(msg="user found", user=user_data)
+        else:
+            return jsonify(msg="not authorized")
+    else:
+        return jsonify(msg="not authorized")
+
+@cross_origin(origin='*')
+@app.route("/users", methods=["get"])
+def get_users():
+    if 'token' in request.headers:
+        token = request.headers.get('token')
+        resp_user = user.find_one({"token": token})
+        if resp_user:
+            fin_all_users = []
+            all_users = user.find()
+            for i in all_users:
+                fin_all_users.append({"name": i["name"], "email": i["email"]})
+            return jsonify(msg="users", users=fin_all_users)
+            # return jsonify(msg="users")
         else:
             return jsonify(msg="not authorized")
     else:
