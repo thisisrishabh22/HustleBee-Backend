@@ -31,8 +31,11 @@ jwt = JWTManager(app)
 app.client = MongoClient(host=DB_CREDS["URI"],connect=False)
 # database
 app.db = app.client[DB_CREDS["DB_NAME"]]
-# collection
+
+# collections
 user = app.db["users"]
+profile = app.db["profiles"]
+
 
 # JWT Config
 app.config["JWT_SECRET_KEY"] = "OizT0h_e6wDiIBlAX2s"
@@ -60,12 +63,12 @@ def register():
     
     resp_user = user.find_one({"email": email})
     if resp_user:
-        return jsonify(msg="User Already Exist"), 409
+        return jsonify(msg="User Already Exist")
     else:
         pw_hash = bcrypt.generate_password_hash(password)
         user_info = dict(name=name, email=email, password=pw_hash, token="")
         user.insert_one(user_info)
-        return jsonify(msg="User added sucessfully"), 201
+        return jsonify(msg="User added sucessfully")
 
 @cross_origin(origin='*')
 @app.route("/login", methods=["POST"])
@@ -85,11 +88,11 @@ def login():
             access_token = create_access_token(identity=email)
             user.update_one({"email": email}, {
                             "$set": {"token": access_token}})
-            return jsonify(msg="Login Succeeded!", accessToken=access_token), 201
+            return jsonify(msg="Login Succeeded!", accessToken=access_token)
         else:
-            return jsonify(msg="Password Incorrect"), 401
+            return jsonify(msg="Password Incorrect")
     else:
-        return jsonify(msg="Not Registered"), 401
+        return jsonify(msg="Not Registered")
 
 @cross_origin(origin='*')
 @app.route("/user", methods=["get"])
@@ -120,7 +123,33 @@ def get_users():
             for i in all_users:
                 fin_all_users.append({"name": i["name"], "email": i["email"]})
             return jsonify(msg="users", users=fin_all_users)
-            # return jsonify(msg="users")
+        else:
+            return jsonify(msg="not authorized")
+    else:
+        return jsonify(msg="not authorized")
+
+@cross_origin(origin='*')
+@app.route("/create-profile", methods=["POST"])
+def create_profile():
+    if 'token' in request.headers:
+        token = request.headers.get('token')
+        if request.is_json:
+            role =  request.json["role"]
+            position = request.json["position"]
+        else:
+            role =  request.form["role"]
+            position = request.form["position"]
+    
+        resp_user = user.find_one({"token": token})
+        if resp_user:
+            resp_profile = profile.find_one({"email" : resp_user["email"]})
+
+            if resp_profile:
+                return jsonify(msg="Profile already exist")
+            else:
+                prof_info = dict(name=resp_user["name"], email=resp_user["email"], role=role, position=position)
+                profile.insert_one(prof_info)
+                return jsonify(msg="Profile created sucessfully")
         else:
             return jsonify(msg="not authorized")
     else:
