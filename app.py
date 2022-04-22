@@ -64,9 +64,10 @@ def register():
         return jsonify(msg="User Already Exist")
     else:
         pw_hash = bcrypt.generate_password_hash(password)
-        user_info = dict(name=name, email=email, password=pw_hash, token="")
+        access_token = create_access_token(identity=email)
+        user_info = dict(name=name, email=email, password=pw_hash, token=access_token)
         user.insert_one(user_info)
-        return jsonify(msg="User added sucessfully")
+        return jsonify(msg="User added sucessfully", accessToken=access_token)
 
 @cross_origin(origin='*')
 @app.route("/login", methods=["POST"])
