@@ -27,7 +27,7 @@ app = Flask(__name__)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 # Making a Connection with MongoClient
-app.client = MongoClient(host=DB_CREDS["URI"],connect=False)
+app.client = MongoClient(host=DB_CREDS["URI"], connect=False)
 # database
 app.db = app.client[DB_CREDS["DB_NAME"]]
 
@@ -47,6 +47,7 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 def dasboard():
     return jsonify(msg="Welcome!")
 
+
 @cross_origin(origin='*')
 @app.route("/register", methods=["POST"])
 def register():
@@ -58,16 +59,18 @@ def register():
         email = request.form["email"]
         name = request.form["name"]
         password = request.form["password"]
-    
+
     resp_user = user.find_one({"email": email})
     if resp_user:
         return jsonify(msg="User Already Exist")
     else:
         pw_hash = bcrypt.generate_password_hash(password)
         access_token = create_access_token(identity=email)
-        user_info = dict(name=name, email=email, password=pw_hash, token=access_token)
+        user_info = dict(name=name, email=email,
+                         password=pw_hash, token=access_token)
         user.insert_one(user_info)
         return jsonify(msg="User added sucessfully", accessToken=access_token)
+
 
 @cross_origin(origin='*')
 @app.route("/login", methods=["POST"])
@@ -93,6 +96,7 @@ def login():
     else:
         return jsonify(msg="Not Registered")
 
+
 @cross_origin(origin='*')
 @app.route("/user", methods=["get"])
 def get_user():
@@ -101,14 +105,17 @@ def get_user():
         resp_user = user.find_one({"token": token})
         if resp_user:
             user_data = {}
-            user_data["_id"] = str(resp_user['_id'])
-            user_data["email"] = resp_user["email"]
-            user_data["name"] = resp_user["name"]
+            user_data = resp_user
+            id = str(resp_user['_id'])
+            user_data["_id"] = id
+            user_data.pop("password")
+            user_data.pop("token")
             return jsonify(msg="user found", user=user_data)
         else:
             return jsonify(msg="not authorized")
     else:
         return jsonify(msg="not authorized")
+
 
 @cross_origin(origin='*')
 @app.route("/users", methods=["get"])
@@ -120,12 +127,14 @@ def get_users():
             fin_all_users = []
             all_users = user.find()
             for i in all_users:
-                fin_all_users.append({"_id": str(i["_id"]), "name": i["name"], "email": i["email"]})
+                fin_all_users.append(
+                    {"_id": str(i["_id"]), "name": i["name"], "email": i["email"]})
             return jsonify(msg="users", users=fin_all_users)
         else:
             return jsonify(msg="not authorized")
     else:
         return jsonify(msg="not authorized")
+
 
 @cross_origin(origin='*')
 @app.route("/create-profile", methods=["POST"])
@@ -133,28 +142,30 @@ def create_profile():
     if 'token' in request.headers:
         token = request.headers.get('token')
         if request.is_json:
-            role =  request.json["role"]
+            role = request.json["role"]
             position = request.json["position"]
             location = request.json["location"]
         else:
-            role =  request.form["role"]
+            role = request.form["role"]
             position = request.form["position"]
             location = request.form["location"]
-    
+
         resp_user = user.find_one({"token": token})
         if resp_user:
-            resp_profile = profile.find_one({"email" : resp_user["email"]})
+            resp_profile = profile.find_one({"email": resp_user["email"]})
 
             if resp_profile:
                 return jsonify(msg="Profile already exist")
             else:
-                prof_info = dict(name=resp_user["name"], email=resp_user["email"], role=role, position=position, location=location)
+                prof_info = dict(
+                    name=resp_user["name"], email=resp_user["email"], role=role, position=position, location=location)
                 profile.insert_one(prof_info)
                 return jsonify(msg="Profile created sucessfully")
         else:
             return jsonify(msg="not authorized")
     else:
         return jsonify(msg="not authorized")
+
 
 @cross_origin(origin='*')
 @app.route("/profile", methods=["get"])
@@ -166,19 +177,18 @@ def get_profile():
             resp_profile = profile.find_one({"email": resp_user["email"]})
             if resp_profile:
                 profile_data = {}
-                profile_data["_id"] = str(resp_profile["_id"])
-                profile_data["email"] = resp_profile["email"]
-                profile_data["name"] = resp_profile["name"]
-                profile_data["role"] = resp_profile["role"]
-                profile_data["position"] = resp_profile["position"]
-                profile_data["location"] = resp_profile["location"]
-                return jsonify(msg="user found", user=profile_data)
+                profile_data = resp_profile
+                id = str(resp_profile["_id"])
+                profile_data["_id"] = id
+                profile_data = {**resp_profile}
+                return jsonify(msg="profile found", profile=profile_data)
             else:
                 return jsonify(msg="Profile not created!")
         else:
             return jsonify(msg="not authorized")
     else:
         return jsonify(msg="not authorized")
+
 
 @cross_origin(origin='*')
 @app.route("/profiles", methods=["get"])
@@ -190,7 +200,8 @@ def get_profiles():
             fin_all_profiles = []
             all_profiles = profile.find()
             for i in all_profiles:
-                fin_all_profiles.append({"_id": str(i["_id"]), "name": i["name"], "email": i["email"], "role": i["role"],"position": i["position"], "location": i["location"]})
+                fin_all_profiles.append({"_id": str(i["_id"]), "name": i["name"], "email": i["email"],
+                                        "role": i["role"], "position": i["position"], "location": i["location"]})
             return jsonify(msg="profiles", profiles=fin_all_profiles)
         else:
             return jsonify(msg="not authorized")
