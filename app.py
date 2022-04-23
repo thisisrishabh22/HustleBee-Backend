@@ -135,9 +135,11 @@ def create_profile():
         if request.is_json:
             role =  request.json["role"]
             position = request.json["position"]
+            location = request.json["location"]
         else:
             role =  request.form["role"]
             position = request.form["position"]
+            location = request.form["location"]
     
         resp_user = user.find_one({"token": token})
         if resp_user:
@@ -146,9 +148,33 @@ def create_profile():
             if resp_profile:
                 return jsonify(msg="Profile already exist")
             else:
-                prof_info = dict(name=resp_user["name"], email=resp_user["email"], role=role, position=position)
+                prof_info = dict(name=resp_user["name"], email=resp_user["email"], role=role, position=position, location=location)
                 profile.insert_one(prof_info)
                 return jsonify(msg="Profile created sucessfully")
+        else:
+            return jsonify(msg="not authorized")
+    else:
+        return jsonify(msg="not authorized")
+
+@cross_origin(origin='*')
+@app.route("/profile", methods=["get"])
+def get_profile():
+    if 'token' in request.headers:
+        token = request.headers.get('token')
+        resp_user = user.find_one({"token": token})
+        if resp_user:
+            resp_profile = profile.find_one({"email": resp_user["email"]})
+            if resp_profile:
+                profile_data = {}
+                profile_data["_id"] = str(resp_profile["_id"])
+                profile_data["email"] = resp_profile["email"]
+                profile_data["name"] = resp_profile["name"]
+                profile_data["role"] = resp_profile["role"]
+                profile_data["position"] = resp_profile["position"]
+                profile_data["location"] = resp_profile["location"]
+                return jsonify(msg="user found", user=profile_data)
+            else:
+                return jsonify(msg="Profile not created!")
         else:
             return jsonify(msg="not authorized")
     else:
