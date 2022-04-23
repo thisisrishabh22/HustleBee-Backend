@@ -10,6 +10,8 @@ import json
 ENV = config("ENV")
 
 # Getting Production or Development DB Credentials
+
+
 def env_config():
     if ENV == "DEV":
         URI = config("LOCAL_URI")
@@ -34,6 +36,7 @@ app.db = app.client[DB_CREDS["DB_NAME"]]
 # collections
 user = app.db["users"]
 profile = app.db["profiles"]
+job = app.db["jobs"]
 
 # JWT Config
 app.config["JWT_SECRET_KEY"] = "OizT0h_e6wDiIBlAX2s"
@@ -203,6 +206,43 @@ def get_profiles():
                 fin_all_profiles.append({"_id": str(i["_id"]), "name": i["name"], "email": i["email"],
                                         "role": i["role"], "position": i["position"], "location": i["location"]})
             return jsonify(msg="profiles", profiles=fin_all_profiles)
+        else:
+            return jsonify(msg="not authorized")
+    else:
+        return jsonify(msg="not authorized")
+
+
+@cross_origin(origin='*')
+@app.route("/create-job", methods=["post"])
+def create_jobs():
+    if 'token' in request.headers:
+        token = request.headers.get('token')
+        resp_user = user.find_one({"token": token})
+        if resp_user:
+            if request.is_json:
+                title = request.json["title"]
+                content = request.json["content"]
+                salary = request.json["salary"]
+                experience = request.json["experience"]
+                location = request.json["location"]
+                category = request.json["category"]
+                type = request.json["type"]
+                industry_category = request.json["industry_category"]
+            else:
+                title = request.form["title"]
+                content = request.form["content"]
+                salary = request.form["salary"]
+                experience = request.form["experience"]
+                location = request.form["location"]
+                category = request.form["category"]
+                type = request.form["type"]
+                industry_category = request.form["industry_category"]
+
+            job_info = dict(employer=resp_user["email"], title=title, content=content, salary=salary,
+                            experience=experience, location=location, category=category, type=type,
+                            industry_category=industry_category, applicants=[])
+            job.insert_one(job_info)
+            return jsonify(msg="job created successfully")
         else:
             return jsonify(msg="not authorized")
     else:
