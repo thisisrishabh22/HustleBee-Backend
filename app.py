@@ -1,10 +1,11 @@
+from pickle import FALSE
 from flask import Flask, jsonify, request
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token
 from pymongo import MongoClient
 from flask_bcrypt import Bcrypt
 from decouple import config
 from flask_cors import CORS, cross_origin
-import json
+from bson.objectid import ObjectId
 
 # Prod Or Dev
 ENV = config("ENV")
@@ -240,9 +241,82 @@ def create_jobs():
 
             job_info = dict(employer=resp_user["email"], title=title, content=content, salary=salary,
                             experience=experience, location=location, category=category, type=type,
-                            industry_category=industry_category, applicants=[])
+                            industry_category=industry_category, applicants=[], published=0)
             job.insert_one(job_info)
             return jsonify(msg="job created successfully")
+        else:
+            return jsonify(msg="not authorized")
+    else:
+        return jsonify(msg="not authorized")
+
+
+@cross_origin(origin='*')
+@app.route("/publish-job", methods=["get"])
+def publish_jobs():
+    if 'token' in request.headers:
+        token = request.headers.get('token')
+        resp_user = user.find_one({"token": token})
+        if resp_user:
+            if request.is_json:
+                job_id = request.json["job_id"]
+            else:
+                job_id = request.form["job_id"]
+            resp_job = job.find_one(
+                {"employer": resp_user["email"], "_id": ObjectId(job_id)})
+            print(resp_job)
+            if resp_job["published"] == 1:
+                return jsonify(msg="job already pubished")
+            else:
+                job.update_one({"employer": resp_user["email"], "_id": ObjectId(job_id)}, {
+                               "$set": {"published": 1}})
+                return jsonify(msg="job published")
+        else:
+            return jsonify(msg="not authorized")
+    else:
+        return jsonify(msg="not authorized")
+
+
+@cross_origin(origin='*')
+@app.route("/unpublish-job", methods=["get"])
+def unpublish_jobs():
+    if 'token' in request.headers:
+        token = request.headers.get('token')
+        resp_user = user.find_one({"token": token})
+        if resp_user:
+            if request.is_json:
+                job_id = request.json["job_id"]
+            else:
+                job_id = request.form["job_id"]
+            resp_job = job.find_one(
+                {"employer": resp_user["email"], "_id": ObjectId(job_id)})
+            if resp_job["published"] == 1:
+                job.update_one({"employer": resp_user["email"], "_id": ObjectId(job_id)}, {
+                               "$set": {"published": 0}})
+                return jsonify(msg="job published")
+            else:
+                return jsonify(msg="job already unpublished")
+        else:
+            return jsonify(msg="not authorized")
+    else:
+        return jsonify(msg="not authorized")
+
+
+@cross_origin(origin='*')
+@app.route("/jobs", methods=["get"])
+def get_jobs():
+    if 'token' in request.headers:
+        token = request.headers.get('token')
+        resp_user = user.find_one({"token": token})
+        if resp_user:
+            resp_job = job.find()
+            print(resp_job[0])
+
+            fin_jobs = []
+            for i in resp_job:
+                data = i
+                data["_id"] = str(data["_id"])
+                fin_jobs.append(data)
+            return jsonify(msg="jobs", jobs=fin_jobs)
         else:
             return jsonify(msg="not authorized")
     else:
