@@ -308,15 +308,42 @@ def get_jobs():
         token = request.headers.get('token')
         resp_user = user.find_one({"token": token})
         if resp_user:
-            resp_job = job.find()
-            print(resp_job[0])
-
+            resp_job = job.find({"published": 1})
             fin_jobs = []
             for i in resp_job:
                 data = i
                 data["_id"] = str(data["_id"])
                 fin_jobs.append(data)
             return jsonify(msg="jobs", jobs=fin_jobs)
+        else:
+            return jsonify(msg="not authorized")
+    else:
+        return jsonify(msg="not authorized")
+
+
+@cross_origin(origin='*')
+@app.route("/apply", methods=["post"])
+def apply_jobs():
+    if 'token' in request.headers:
+        token = request.headers.get('token')
+        resp_user = user.find_one({"token": token})
+        if resp_user:
+
+            if request.is_json:
+                job_id = request.json["job_id"]
+            else:
+                job_id = request.form["job_id"]
+
+                resp_job = job.find_one(
+                    {"published": 1, "_id": ObjectId(job_id)})
+            if resp_user["email"] in resp_job["applicants"]:
+                return jsonify(msg="already applied to the job")
+            else:
+                new_applicants = resp_job["applicants"]
+                new_applicants.append(resp_user["email"])
+                job.update_one({"published": 1, "_id": ObjectId(job_id)}, {
+                               "$set": {"applicants": new_applicants}})
+                return jsonify(msg="applied to the job")
         else:
             return jsonify(msg="not authorized")
     else:
