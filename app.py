@@ -120,7 +120,7 @@ def get_users():
             fin_all_users = []
             all_users = user.find()
             for i in all_users:
-                fin_all_users.append({"name": i["name"], "email": i["email"]})
+                fin_all_users.append({"_id": str(i["_id"]), "name": i["name"], "email": i["email"]})
             return jsonify(msg="users", users=fin_all_users)
         else:
             return jsonify(msg="not authorized")
@@ -175,6 +175,23 @@ def get_profile():
                 return jsonify(msg="user found", user=profile_data)
             else:
                 return jsonify(msg="Profile not created!")
+        else:
+            return jsonify(msg="not authorized")
+    else:
+        return jsonify(msg="not authorized")
+
+@cross_origin(origin='*')
+@app.route("/profiles", methods=["get"])
+def get_profiles():
+    if 'token' in request.headers:
+        token = request.headers.get('token')
+        resp_user = user.find_one({"token": token})
+        if resp_user:
+            fin_all_profiles = []
+            all_profiles = profile.find()
+            for i in all_profiles:
+                fin_all_profiles.append({"_id": str(i["_id"]), "name": i["name"], "email": i["email"], "role": i["role"],"position": i["position"], "location": i["location"]})
+            return jsonify(msg="profiles", profiles=fin_all_profiles)
         else:
             return jsonify(msg="not authorized")
     else:
