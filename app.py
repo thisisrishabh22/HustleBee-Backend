@@ -322,9 +322,12 @@ def get_jobs():
 def apply_jobs():
     if 'token' in request.headers:
         token = request.headers.get('token')
-        job_id = request.headers.get('jobid')
         resp_user = user.find_one({"token": token})
         if resp_user:
+            if request.is_json:
+                job_id = request.json["jobid"]
+            else:
+                job_id = request.form["jobid"]
             resp_job = job.find_one(
                 {"published": 1, "_id": ObjectId(job_id)})
             if resp_user["email"] in resp_job["applicants"]:
