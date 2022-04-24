@@ -254,7 +254,7 @@ def create_jobs():
 def publish_jobs():
     if 'token' in request.headers:
         token = request.headers.get('token')
-        job_id = request.headers.get('job_id')
+        job_id = request.headers.get('jobid')
         resp_user = user.find_one({"token": token})
         if resp_user:
             resp_job = job.find_one(
@@ -277,7 +277,7 @@ def publish_jobs():
 def unpublish_jobs():
     if 'token' in request.headers:
         token = request.headers.get('token')
-        job_id = request.headers.get('job_id')
+        job_id = request.headers.get('jobid')
         resp_user = user.find_one({"token": token})
         if resp_user:
             resp_job = job.find_one(
@@ -322,7 +322,7 @@ def get_jobs():
 def apply_jobs():
     if 'token' in request.headers:
         token = request.headers.get('token')
-        job_id = request.headers.get('job_id')
+        job_id = request.headers.get('jobid')
         resp_user = user.find_one({"token": token})
         if resp_user:
             resp_job = job.find_one(
