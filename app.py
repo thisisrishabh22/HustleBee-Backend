@@ -256,10 +256,7 @@ def publish_jobs():
         token = request.headers.get('token')
         resp_user = user.find_one({"token": token})
         if resp_user:
-            if request.is_json:
-                job_id = request.json["job_id"]
-            else:
-                job_id = request.form["job_id"]
+            job_id = request.headers.get("job_id")
             resp_job = job.find_one(
                 {"employer": resp_user["email"], "_id": ObjectId(job_id)})
             print(resp_job)
@@ -282,10 +279,7 @@ def unpublish_jobs():
         token = request.headers.get('token')
         resp_user = user.find_one({"token": token})
         if resp_user:
-            if request.is_json:
-                job_id = request.json["job_id"]
-            else:
-                job_id = request.form["job_id"]
+            job_id = request.headers.get("job_id")
             resp_job = job.find_one(
                 {"employer": resp_user["email"], "_id": ObjectId(job_id)})
             if resp_job["published"] == 1:
@@ -330,13 +324,8 @@ def apply_jobs():
         token = request.headers.get('token')
         resp_user = user.find_one({"token": token})
         if resp_user:
-
-            if request.is_json:
-                job_id = request.json["job_id"]
-            else:
-                job_id = request.form["job_id"]
-
-                resp_job = job.find_one(
+            job_id = request.headers.get("job_id")
+            resp_job = job.find_one(
                     {"published": 1, "_id": ObjectId(job_id)})
             if resp_user["email"] in resp_job["applicants"]:
                 return jsonify(msg="already applied to the job")
