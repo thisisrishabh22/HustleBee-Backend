@@ -285,7 +285,7 @@ def unpublish_jobs():
             if resp_job["published"] == 1:
                 job.update_one({"employer": resp_user["email"], "_id": ObjectId(job_id)}, {
                                "$set": {"published": 0}})
-                return jsonify(msg="job published")
+                return jsonify(msg="job unpublished")
             else:
                 return jsonify(msg="job already unpublished")
         else:
@@ -326,7 +326,7 @@ def apply_jobs():
         if resp_user:
             job_id = request.headers.get("job_id")
             resp_job = job.find_one(
-                    {"published": 1, "_id": ObjectId(job_id)})
+                {"published": 1, "_id": ObjectId(job_id)})
             if resp_user["email"] in resp_job["applicants"]:
                 return jsonify(msg="already applied to the job")
             else:
