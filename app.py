@@ -1,4 +1,3 @@
-from pickle import FALSE
 from flask import Flask, jsonify, request
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token
 from pymongo import MongoClient
@@ -314,7 +313,10 @@ def get_jobs():
                 data = i
                 data["_id"] = str(data["_id"])
                 fin_jobs.append(data)
-            return jsonify(msg="jobs", jobs=fin_jobs)
+            if len(fin_jobs) > 0:
+                return jsonify(msg="jobs", jobs=fin_jobs)
+            else:
+                return jsonify(msg="no jobs")
         else:
             return jsonify(msg="not authorized")
     else:
@@ -344,6 +346,29 @@ def apply_jobs():
                 job.update_one({"published": 1, "_id": ObjectId(job_id)}, {
                                "$set": {"applicants": new_applicants}})
                 return jsonify(msg="applied to the job")
+        else:
+            return jsonify(msg="not authorized")
+    else:
+        return jsonify(msg="not authorized")
+
+
+@cross_origin(origin='*')
+@app.route("/my-posted-jobs", methods=["get"])
+def get_my_posted_jobs():
+    if 'token' in request.headers:
+        token = request.headers.get('token')
+        resp_user = user.find_one({"token": token})
+        if resp_user:
+            resp_job = job.find({"employer": resp_user["email"]})
+            fin_jobs = []
+            for i in resp_job:
+                data = i
+                data["_id"] = str(data["_id"])
+                fin_jobs.append(data)
+            if len(fin_jobs) > 0:
+                return jsonify(msg="my posted jobs", my_posted_jobs=fin_jobs)
+            else:
+                return jsonify(msg="you have no jobs posted")
         else:
             return jsonify(msg="not authorized")
     else:
