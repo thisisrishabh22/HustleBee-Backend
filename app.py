@@ -301,11 +301,12 @@ def get_jobs():
         token = request.headers.get('token')
         resp_user = user.find_one({"token": token})
         if resp_user:
-            resp_job = job.find({"published": 1})
+            resp_job = job.find({"published": 1, "deleted": 0})
             fin_jobs = []
             for i in resp_job:
                 data = i
                 data["_id"] = str(data["_id"])
+                data.pop("deleted")
                 fin_jobs.append(data)
             if len(fin_jobs) > 0:
                 return jsonify(msg="jobs", jobs=fin_jobs)
@@ -361,6 +362,53 @@ def get_my_posted_jobs():
                 return jsonify(msg="my posted jobs", my_posted_jobs=fin_jobs)
             else:
                 return jsonify(msg="you have no jobs posted")
+        else:
+            return jsonify(msg="not authorized")
+    else:
+        return jsonify(msg="not authorized")
+
+
+@cross_origin(origin='*')
+@app.route("/job/delete/<string:jobid>", methods=["get"])
+def delete_job(jobid):
+    job_id = jobid
+    if 'token' in request.headers:
+        token = request.headers.get('token')
+        resp_user = user.find_one({"token": token})
+        if resp_user:
+            resp_job = job.find_one(
+                {"employer": resp_user["email"], "_id": ObjectId(job_id), "deleted": 0})
+            if resp_job:
+                job.update_one(
+                    {"employer": resp_user["email"], "_id": ObjectId(job_id), "deleted": 0}, {
+                        "$set": {"deleted": 1}})
+                return jsonify(msg="job deleted successfully")
+            else:
+                return jsonify(msg="job not found")
+        else:
+            return jsonify(msg="not authorized")
+    else:
+        return jsonify(msg="not authorized")
+    
+    
+@cross_origin(origin='*')
+@app.route("/my-applied", methods=["get"])
+def my_applied_jobs():
+    if 'token' in request.headers:
+        token = request.headers.get('token')
+        resp_user = user.find_one({"token": token})
+        if resp_user:
+            resp_job = job.find({"published": 1, "deleted": 0, "applicants": resp_user["email"]})
+            fin_jobs = []
+            for i in resp_job:
+                data = i
+                data["_id"] = str(data["_id"])
+                data.pop("deleted")
+                fin_jobs.append(data)
+            if len(fin_jobs) > 0:
+                return jsonify(msg="applied jobs", jobs=fin_jobs)
+            else:
+                return jsonify(msg="no applied jobs")
         else:
             return jsonify(msg="not authorized")
     else:
