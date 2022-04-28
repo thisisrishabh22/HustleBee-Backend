@@ -240,7 +240,7 @@ def create_jobs():
 
             job_info = dict(employer=resp_user["email"], title=title, content=content, salary=salary,
                             experience=experience, location=location, category=category, type=type,
-                            industry_category=industry_category, applicants=[], published=0)
+                            industry_category=industry_category, applicants=[], published=0, deleted=0)
             job.insert_one(job_info)
             return jsonify(msg="job created successfully")
         else:
@@ -352,7 +352,7 @@ def get_my_posted_jobs():
         token = request.headers.get('token')
         resp_user = user.find_one({"token": token})
         if resp_user:
-            resp_job = job.find({"employer": resp_user["email"]})
+            resp_job = job.find({"employer": resp_user["email"], "deleted": 0})
             fin_jobs = []
             for i in resp_job:
                 data = i
@@ -389,8 +389,8 @@ def delete_job(jobid):
             return jsonify(msg="not authorized")
     else:
         return jsonify(msg="not authorized")
-    
-    
+
+
 @cross_origin(origin='*')
 @app.route("/my-applied", methods=["get"])
 def my_applied_jobs():
@@ -398,7 +398,8 @@ def my_applied_jobs():
         token = request.headers.get('token')
         resp_user = user.find_one({"token": token})
         if resp_user:
-            resp_job = job.find({"published": 1, "deleted": 0, "applicants": resp_user["email"]})
+            resp_job = job.find(
+                {"published": 1, "deleted": 0, "applicants": resp_user["email"]})
             fin_jobs = []
             for i in resp_job:
                 data = i
