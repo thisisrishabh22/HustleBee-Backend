@@ -8,4 +8,7 @@ name = "pypi"
 [dev-packages]
 
 [requires]
-python_version = "3.10"
+python_version = "3.11.6"
+
+# pip version
+pip = "24.0"
